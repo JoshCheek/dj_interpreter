@@ -8,6 +8,10 @@ and it can really only run [examples/simple.rb](examples/simple.rb) example.
 To try it out:
 
 ```sh
+# make sure you have the gem we use to parse it
+$ bundle install
+
+# run our simple interpreter
 $ bin/simple_lang examples/simple.rb
 ```
 
