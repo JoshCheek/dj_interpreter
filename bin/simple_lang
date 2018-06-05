@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+filename = ARGV[0]
+body = File.read filename
+
+require 'parser/ruby24'
+ast = Parser::Ruby24.parse body
+
+def operator?(name)
+  return true if name == :+
+  return true if name == :-
+  return true if name == :*
+  # ... etc ...
+  false
+end
+
+def run(ast, callstack, methods)
+  case ast.type
+  when :begin
+    result = nil
+    ast.children.each { |child| result = run(child, callstack, methods) }
+    result
+  when :def
+    name = ast.children[0]
+    args = ast.children[1]
+    body = ast.children[2]
+    methods[name] = {args: args, body: body}
+  when :send
+    name = ast.children[1]
+    arg  = run ast.children[2], callstack, methods
+
+    if operator?(name)
+      lhs = run ast.children[0], callstack, methods
+      lhs.send name, arg
+    elsif name == :puts
+      puts arg
+    else
+      method   = methods.fetch name
+      arg_name = method[:args].children[0].children[0]
+      binding  = {arg_name => arg}
+
+      callstack.push(binding)
+      result = run method[:body], callstack, methods
+      callstack.pop
+      result
+    end
+  when :lvar
+    var_name = ast.children[0]
+    binding  = callstack.last
+    binding[var_name]
+  when :str
+    ast.children[0]
+  else
+    require "pry"
+    binding().pry
+  end
+end
+
+run ast, [{}], {}
+
